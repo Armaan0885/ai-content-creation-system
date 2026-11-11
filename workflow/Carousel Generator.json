@@ -1,0 +1,327 @@
+{
+  "name": "Carousel Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Carousel Generator",
+        "formDescription": "Turn a raw idea into a ready-to-edit carousel.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Raw Idea",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Platform",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Instagram"
+                  },
+                  {
+                    "option": "LinkedIn"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Number of slides",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Target Audience"
+            },
+            {
+              "fieldLabel": "Tone"
+            },
+            {
+              "fieldLabel": "Brand Line"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ec15d01c-1187-4b2e-995d-028fca64e85c",
+      "name": "On form submission",
+      "webhookId": "326a9ef9-f396-4c01-976c-0a79ffbdb0ed"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": `Research this carousel idea for ${$('On form submission').item.json['Platform']}: \"${$('On form submission').item.json['Raw Idea']}\". Audience: ${$('On form submission').item.json['Target Audience'] || 'general'}. Find accurate, specific facts, common mistakes, and useful tips. Return a concise factual brief of key points, with the most important insights first. Plain text only.`\n    }]\n  }],\n  \"tools\": [{ \"google_search\": {} }],\n  \"generationConfig\": {\n    \"maxOutputTokens\": 2048,\n    \"thinkingConfig\": { \"thinkingBudget\": 0 }\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "dfb3331d-31ec-4f5f-8221-69de8ff146fb",
+      "name": "Research",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "1qFNRdUazaIfK07t",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": `You are a social media content strategist. Using ONLY the research brief below, create a ${$('On form submission').item.json['Platform']} carousel.\n\nIdea: ${$('On form submission').item.json['Raw Idea']}\nAudience: ${$('On form submission').item.json['Target Audience'] || 'general'}\nTone: ${$('On form submission').item.json['Tone'] || 'friendly'}\nTotal slides: ${$('On form submission').item.json['Number of slides']} (1 cover + ${Number($('On form submission').item.json['Number of slides']) - 2} content slides + 1 closing call-to-action slide).\n\nRules:\n- Fix grammar in the idea (e.g. \"5 reasons your pet needs a vet\").\n- Do not use country-specific statistics unless they apply to India. If unsure, leave numbers out.\n- Slide headings: max 7 words. Slide body: max ${$('On form submission').item.json['Platform'] === 'LinkedIn' ? 40 : 28} words.\n- Each content slide must have a different point. Make the cover title a strong hook.\n- Colors must be hex codes with strong contrast between background_color and text_color.\n- Fonts must be one of: Montserrat, Poppins, Lato, Roboto, Oswald, Raleway, Playfair Display, Open Sans.\n- The design theme must suit the topic and audience.\n\nResearch brief:\n${$('Research').item.json.candidates[0].content.parts[0].text}`\n    }]\n  }],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\",\n    \"thinkingConfig\": { \"thinkingBudget\": 0 },\n    \"responseSchema\": {\n      \"type\": \"OBJECT\",\n      \"properties\": {\n        \"headline_options\": { \"type\": \"ARRAY\", \"items\": { \"type\": \"STRING\" } },\n        \"cover_title\": { \"type\": \"STRING\" },\n        \"content_slides\": {\n          \"type\": \"ARRAY\",\n          \"items\": {\n            \"type\": \"OBJECT\",\n            \"properties\": {\n              \"heading\": { \"type\": \"STRING\" },\n              \"body\": { \"type\": \"STRING\" },\n              \"visual_direction\": { \"type\": \"STRING\" }\n            }\n          }\n        },\n        \"cta_slide\": {\n          \"type\": \"OBJECT\",\n          \"properties\": {\n            \"heading\": { \"type\": \"STRING\" },\n            \"body\": { \"type\": \"STRING\" }\n          }\n        },\n        \"caption\": { \"type\": \"STRING\" },\n        \"hashtags\": { \"type\": \"ARRAY\", \"items\": { \"type\": \"STRING\" } },\n        \"design_system\": {\n          \"type\": \"OBJECT\",\n          \"properties\": {\n            \"theme_name\": { \"type\": \"STRING\" },\n            \"background_color\": { \"type\": \"STRING\" },\n            \"text_color\": { \"type\": \"STRING\" },\n            \"accent_color\": { \"type\": \"STRING\" },\n            \"heading_font\": { \"type\": \"STRING\" },\n            \"body_font\": { \"type\": \"STRING\" }\n          }\n        }\n      }\n    }\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        0
+      ],
+      "id": "b350c1ec-5970-498e-a8f3-710a7ca887ab",
+      "name": "Structure",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BKJjvJcZsQ0PDSYN",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text;\nconst d = JSON.parse(raw);\nconst form = $('On form submission').first().json;\n\nconst hex = /^#[0-9A-Fa-f]{6}$/;\nconst color = (c, fallback) => (hex.test(c) ? c : fallback);\nconst ds = d.design_system || {};\n\nconst slides = [\n  ...d.content_slides.map(s => ({\n    heading: s.heading,\n    body: s.body,\n    visual: s.visual_direction || ''\n  })),\n  { heading: d.cta_slide.heading, body: d.cta_slide.body, visual: '' }\n];\n\nreturn [{\n  json: {\n    platform: form['Platform'],\n    coverTitle: d.cover_title,\n    slides,\n    caption: d.caption,\n    hashtags: (d.hashtags || []).map(h => '#' + h.replace(/^#/, '')).join(' '),\n    headlineOptions: d.headline_options || [],\n    theme: {\n      name: ds.theme_name || 'Theme',\n      background: color(ds.background_color, '#FFFFFF'),\n      text: color(ds.text_color, '#222222'),\n      accent: color(ds.accent_color, '#0B6EFD'),\n      headingFont: ds.heading_font || 'Poppins',\n      bodyFont: ds.body_font || 'Lato'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "a71bc1eb-d176-4385-913e-1548e80110ed",
+      "name": "Parse"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files/1s9z_QQu6yPJXQRzOffuC8MfL2DOOxKVtLCn8YCF5894/copy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"name\": $json.coverTitle } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        848,
+        0
+      ],
+      "id": "6e02571d-5868-4bea-8623-e0708b1fad86",
+      "name": "Create Deck",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "J0dsGfOflbM2f5Je",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://slides.googleapis.com/v1/presentations/{{ $json.id }}?fields=pageSize,slides.objectId,slides.pageElements.objectId",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSlidesOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "66b390cc-4034-4004-9087-703644094f62",
+      "name": "Get Deck",
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "JsVaWyG7ZhEzMDV5",
+          "name": "Google Slides account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const deck = $input.first().json;\nconst presentationId = $('Create Deck').first().json.id;\nconst d = $('Parse').first().json;\nconst brand = String($('On form submission').first().json['Brand Line'] || '').trim();\n\n// ---- Safety checks ----\nconst W = deck.pageSize.width.magnitude;\nconst H = deck.pageSize.height.magnitude;\nif (!(H > W)) throw new Error('Template is not portrait. Check Page setup in the template.');\nif (!deck.slides || deck.slides.length !== 1) throw new Error('Expected the copied template to have exactly 1 slide.');\nif (deck.slides[0].pageElements && deck.slides[0].pageElements.length) throw new Error('Cover slide in the template is not empty. Delete its boxes.');\nconst coverId = deck.slides[0].objectId;\n\n// ---- Helpers ----\nconst PX = W / 1080;\nconst px = n => Math.round(n * PX);\nconst M = 90;\nconst rgb = h => ({\n  red: parseInt(h.slice(1, 3), 16) / 255,\n  green: parseInt(h.slice(3, 5), 16) / 255,\n  blue: parseInt(h.slice(5, 7), 16) / 255\n});\nconst lum = h => {\n  const c = [1, 3, 5].map(i => {\n    const v = parseInt(h.slice(i, i + 2), 16) / 255;\n    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);\n  });\n  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];\n};\nconst contrast = (a, b) => {\n  const x = lum(a), y = lum(b);\n  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);\n};\nconst readableOn = (bg, preferred) =>\n  contrast(preferred, bg) >= 4.5 ? preferred : (lum(bg) > 0.5 ? '#1A1A1A' : '#FFFFFF');\n\n// ---- Theme ----\nconst t = d.theme;\nconst bgColor = t.background;\nconst accent = t.accent;\nconst textColor = readableOn(bgColor, t.text);\nconst onAccent = readableOn(accent, textColor);\nconst ctaOnAccent = contrast(textColor, accent) >= 4.5;\nconst ctaBg = ctaOnAccent ? accent : bgColor;\nconst ctaBar = ctaOnAccent ? textColor : accent;\nconst ctaText = readableOn(ctaBg, textColor);\nconst buttonText = readableOn(ctaBar, ctaBg);\n\nconst reqs = [];\n\nconst setBg = (pageId, hex) => reqs.push({\n  updatePageProperties: {\n    objectId: pageId,\n    pageProperties: { pageBackgroundFill: { solidFill: { color: { rgbColor: rgb(hex) } } } },\n    fields: 'pageBackgroundFill.solidFill.color'\n  }\n});\n\nconst create = (id, pageId, shapeType, x, y, w, h) => reqs.push({\n  createShape: {\n    objectId: id,\n    shapeType,\n    elementProperties: {\n      pageObjectId: pageId,\n      size: { width: { magnitude: px(w), unit: 'EMU' }, height: { magnitude: px(h), unit: 'EMU' } },\n      transform: { scaleX: 1, scaleY: 1, translateX: px(x), translateY: px(y), unit: 'EMU' }\n    }\n  }\n});\n\nconst fillShape = (id, pageId, type, x, y, w, h, hex) => {\n  create(id, pageId, type, x, y, w, h);\n  reqs.push({\n    updateShapeProperties: {\n      objectId: id,\n      shapeProperties: {\n        shapeBackgroundFill: { solidFill: { color: { rgbColor: rgb(hex) } } },\n        outline: { propertyState: 'NOT_RENDERED' }\n      },\n      fields: 'shapeBackgroundFill.solidFill.color,outline.propertyState'\n    }\n  });\n};\n\nconst styleText = (id, font, size, bold, hex, align, lineSpacing) => {\n  reqs.push({\n    updateTextStyle: {\n      objectId: id,\n      textRange: { type: 'ALL' },\n      style: {\n        fontFamily: font,\n        fontSize: { magnitude: size, unit: 'PT' },\n        bold,\n        foregroundColor: { opaqueColor: { rgbColor: rgb(hex) } }\n      },\n      fields: 'fontFamily,fontSize,bold,foregroundColor'\n    }\n  });\n  reqs.push({\n    updateParagraphStyle: {\n      objectId: id,\n      textRange: { type: 'ALL' },\n      style: { alignment: align, lineSpacing },\n      fields: 'alignment,lineSpacing'\n    }\n  });\n};\n\nconst anchorText = (id, anchor) => reqs.push({\n  updateShapeProperties: {\n    objectId: id,\n    shapeProperties: { contentAlignment: anchor },\n    fields: 'contentAlignment'\n  }\n});\n\nconst text = (id, pageId, x, y, w, h, str, font, size, bold, hex, anchor) => {\n  if (!str) return;\n  create(id, pageId, 'TEXT_BOX', x, y, w, h);\n  reqs.push({ insertText: { objectId: id, insertionIndex: 0, text: String(str) } });\n  styleText(id, font, size, bold, hex, 'START', 112);\n  if (anchor) anchorText(id, anchor);\n};\n\nconst badge = (id, pageId, x, y, size, label, font, hex, textHex) => {\n  fillShape(id, pageId, 'ELLIPSE', x, y, size, size, hex);\n  reqs.push({ insertText: { objectId: id, insertionIndex: 0, text: String(label) } });\n  styleText(id, font, 34, true, textHex, 'CENTER', 100);\n  anchorText(id, 'MIDDLE');\n};\n\nconst button = (id, pageId, x, y, w, h, label, font, fillHex, textHex) => {\n  fillShape(id, pageId, 'ROUND_RECTANGLE', x, y, w, h, fillHex);\n  reqs.push({ insertText: { objectId: id, insertionIndex: 0, text: String(label) } });\n  styleText(id, font, 28, true, textHex, 'CENTER', 100);\n  anchorText(id, 'MIDDLE');\n};\n\nconst bodySize = (s, isCta) => {\n  const n = (s || '').length;\n  if (isCta) return n <= 140 ? 36 : 32;\n  return n <= 150 ? 42 : n <= 210 ? 38 : 32;\n};\n\nconst total = d.slides.length + 1;\n\n// 1) Create new slides (cover already exists as `coverId`)\nd.slides.forEach((s, i) => {\n  reqs.push({\n    createSlide: {\n      objectId: `slide_${i + 1}`,\n      insertionIndex: i + 1,\n      slideLayoutReference: { predefinedLayout: 'BLANK' }\n    }\n  });\n});\n\n// 2) Cover\nsetBg(coverId, bgColor);\nfillShape('cover_circle', coverId, 'ELLIPSE', 640, -230, 640, 640, accent);\nfillShape('cover_bar', coverId, 'RECTANGLE', M, 560, 160, 16, accent);\ntext('cover_title', coverId, M, 610, 1080 - 2 * M, 520, d.coverTitle, t.headingFont, 80, true, textColor);\ntext('cover_footer', coverId, M, 1190, 1080 - 2 * M, 70, brand || 'Swipe \\u2192', t.bodyFont, 24, false, textColor);\n\n// 3) Content + CTA slides\nd.slides.forEach((s, i) => {\n  const pageId = `slide_${i + 1}`;\n  const isCta = i === d.slides.length - 1;\n  const fg = isCta ? ctaText : textColor;\n  setBg(pageId, isCta ? ctaBg : bgColor);\n\n  if (!isCta) {\n    badge(`badge_${i + 1}`, pageId, M, 130, 120, i + 1, t.headingFont, accent, onAccent);\n    text(`title_${i + 1}`, pageId, M, 280, 1080 - 2 * M, 420, s.heading, t.headingFont, 62, true, fg, 'BOTTOM');\n    fillShape(`bar_${i + 1}`, pageId, 'RECTANGLE', M, 730, 160, 16, accent);\n    text(`body_${i + 1}`, pageId, M, 790, 1080 - 2 * M, 400, s.body, t.bodyFont, bodySize(s.body, false), false, fg);\n  } else {\n    // CTA slide: tighter layout so the button fits below the body\n    text(`title_${i + 1}`, pageId, M, 200, 1080 - 2 * M, 420, s.heading, t.headingFont, 62, true, fg, 'BOTTOM');\n    fillShape(`bar_${i + 1}`, pageId, 'RECTANGLE', M, 650, 160, 16, ctaBar);\n    text(`body_${i + 1}`, pageId, M, 710, 1080 - 2 * M, 280, s.body, t.bodyFont, bodySize(s.body, true), false, fg);\n    if (brand) {\n      button(`cta_button`, pageId, M, 1040, 1080 - 2 * M, 130, brand, t.headingFont, ctaBar, buttonText);\n    }\n  }\n});\n\nreturn [{\n  json: {\n    presentationId,\n    slideCount: total,\n    requestCount: reqs.length,\n    requests: reqs\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "ea67c5ec-040a-41cb-a52e-843ae2b09105",
+      "name": "Build Requests"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://slides.googleapis.com/v1/presentations/{{ $json.presentationId }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSlidesOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"requests\": $json.requests } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "1bf6f81f-450b-4f17-974b-c9e20ec06dfa",
+      "name": "Apply Design",
+      "credentials": {
+        "googleSlidesOAuth2Api": {
+          "id": "JsVaWyG7ZhEzMDV5",
+          "name": "Google Slides account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const id = $('Build Requests').first().json.presentationId;\nconst d = $('Parse').first().json;\n\nreturn [{\n  json: {\n    editLink: `https://docs.google.com/presentation/d/${id}/edit`,\n    pdfDownload: `https://docs.google.com/presentation/d/${id}/export/pdf`,\n    platform: d.platform,\n    caption: d.caption,\n    hashtags: d.hashtags,\n    headlineOptions: d.headlineOptions\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        0
+      ],
+      "id": "139304e9-a54c-4f66-8ba2-36ea9929ca2b",
+      "name": "Final Output"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research": {
+      "main": [
+        [
+          {
+            "node": "Structure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure": {
+      "main": [
+        [
+          {
+            "node": "Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse": {
+      "main": [
+        [
+          {
+            "node": "Create Deck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Deck": {
+      "main": [
+        [
+          {
+            "node": "Get Deck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Deck": {
+      "main": [
+        [
+          {
+            "node": "Build Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Requests": {
+      "main": [
+        [
+          {
+            "node": "Apply Design",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Design": {
+      "main": [
+        [
+          {
+            "node": "Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6a86f2f0-e02d-4ae0-be57-77038974161b",
+  "meta": {
+    "instanceId": "14513e8f01e6c8c0b98e1ece8d391cd739fa296e4750fbac7538b811ca1a2cbd"
+  },
+  "nodeGroups": [],
+  "id": "tdhIVVaq5yShRAJT",
+  "tags": []
+}
